@@ -100,11 +100,7 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
         }
         break;
     }
-
-    // bottom navigation の履歴をたどる。なくなったらアプリを閉じる
-    _ref.read(bottomNavigationStackProvider.notifier).pop();
-    notifyListeners();
-    return true;
+    return false;
   }
 
   @override
