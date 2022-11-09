@@ -16,32 +16,29 @@ class TabSampleView extends HookConsumerWidget {
           .update((state) => SampleTabBar.from(rawValue: tabController.index));
     });
     return Scaffold(
-        appBar: AppBar(
-          title: const Text('TabSampleView'),
-          bottom: TabBar(controller: tabController, tabs: const [
-            Tab(
-              child: Text('01'),
-            ),
-            Tab(
-              child: Text('02'),
-            ),
-            Tab(
-              child: Text('03'),
-            ),
-          ]),
-        ),
-        body: Column(
-          children: [
-            TabBarView(
-              controller: tabController,
-              children: const [
-                SubView01(),
-                SubView02(),
-                SubView03(),
-              ],
-            ),
-          ],
-        ));
+      appBar: AppBar(
+        title: const Text('TabSampleView'),
+        bottom: TabBar(controller: tabController, tabs: const [
+          Tab(
+            child: Text('01'),
+          ),
+          Tab(
+            child: Text('02'),
+          ),
+          Tab(
+            child: Text('03'),
+          ),
+        ]),
+      ),
+      body: TabBarView(
+        controller: tabController,
+        children: const [
+          SubView01(),
+          SubView02(),
+          SubView03(),
+        ],
+      ),
+    );
   }
 }
 
