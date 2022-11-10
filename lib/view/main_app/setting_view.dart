@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/provider/navigation/auth_navigation.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_application_1/provider/navigation/setting_navigation.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -19,6 +20,7 @@ class SettingView extends HookWidget {
                 if (isLoggingOut.value) return;
                 isLoggingOut.value = true;
                 await ref.read(authNavigationProvider.notifier).logout();
+                ref.read(navigateTrigerProvider.notifier).navigate();
                 isLoggingOut.value = false;
               },
               child: isLoggingOut.value
@@ -38,6 +40,7 @@ class SettingView extends HookWidget {
                     ref
                         .read(isOpenSettingDetailProvider.notifier)
                         .update((state) => true);
+                    ref.read(navigateTrigerProvider.notifier).navigate();
                   },
                 ))
       ])),

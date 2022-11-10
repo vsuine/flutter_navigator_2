@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/provider/navigation/bottom_navigation.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_application_1/provider/navigation/sample_tabbar_navigation.dart';
 import 'package:flutter_application_1/provider/navigation/selected_data_detail_stack.dart';
 import 'package:flutter_application_1/provider/navigation/setting_navigation.dart';
@@ -19,7 +20,11 @@ class MainApp extends ConsumerWidget {
     return Scaffold(
       body: Router(
         routerDelegate: NestedRouterDelegate(ref),
+        // 戻るボタンの制御をネストされた Router に渡す
         backButtonDispatcher: childBackButtonDispatcher,
+        // ネストされた route information parser はもし設定しても呼び出されることはない
+        // OS への URL 変更通知がネストされた Router からでも飛ばせるほうが直観的なのになぜ？
+        routeInformationParser: null,
       ),
       bottomNavigationBar: BottomNavigationBar(
           currentIndex: ref.watch(bottomNavigationStackProvider
@@ -30,6 +35,7 @@ class MainApp extends ConsumerWidget {
                 .read(bottomNavigationStackProvider.notifier)
                 .push(BottomNavigationState.from(rawValue: value));
             if (isNotSameTab) {
+              ref.read(navigateTrigerProvider.notifier).navigate();
               return;
             }
             // 同じタブを選択したならタブの初期化を行う
@@ -38,8 +44,8 @@ class MainApp extends ConsumerWidget {
               case BottomNavigationState.home:
                 // スクロール位置をトップに戻す
                 ref
-                    .read(homeViewScrollPositionProvider.notifier)
-                    .update((state) => 0.0);
+                    .read(initHomeViewScrollPositionProvider.notifier)
+                    .update((state) => !state);
                 break;
               case BottomNavigationState.tabSample:
                 if (ref.read(sampleTabProvider) != SampleTabBar.tab02) {
@@ -47,26 +53,30 @@ class MainApp extends ConsumerWidget {
                 }
                 // スクロール位置をトップに戻す
                 ref
-                    .read(tabSampleSubViewScrollPosition.notifier)
-                    .update((state) => 0.0);
+                    .read(initTabSampleSubViewScrollPosition.notifier)
+                    .update((state) => !state);
                 break;
               case BottomNavigationState.dataList:
                 if (ref.read(selectedSampleDataStackProvider
                     .select((value) => value.isEmpty))) {
                   // スクロール位置をトップに戻す
                   ref
-                      .read(dataListScrollPositionProvider.notifier)
-                      .update((state) => 0.0);
+                      .read(initDataListScrollPositionProvider.notifier)
+                      .update((state) => !state);
                   break;
                 }
                 // 詳細ページなら閉じる
                 ref.read(selectedSampleDataStackProvider.notifier).clear();
+                ref.read(navigateTrigerProvider.notifier).navigate();
                 break;
               case BottomNavigationState.setting:
                 // 詳細設定ページを閉じる
-                ref
-                    .read(isOpenSettingDetailProvider.notifier)
-                    .update((state) => false);
+                if (ref.read(isOpenSettingDetailProvider)) {
+                  ref
+                      .read(isOpenSettingDetailProvider.notifier)
+                      .update((state) => false);
+                  ref.read(navigateTrigerProvider.notifier).navigate();
+                }
                 break;
             }
           },

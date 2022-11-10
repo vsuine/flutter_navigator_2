@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/provider/navigation/bottom_navigation.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_application_1/provider/navigation/selected_data_detail_stack.dart';
 import 'package:flutter_application_1/provider/navigation/setting_navigation.dart';
 import 'package:flutter_application_1/view/main_app/home_view.dart';
@@ -16,7 +17,13 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
   final GlobalKey<NavigatorState> navigatorKey;
   final WidgetRef _ref;
 
-  NestedRouterDelegate(this._ref) : navigatorKey = GlobalKey<NavigatorState>();
+  NestedRouterDelegate(this._ref) : navigatorKey = GlobalKey<NavigatorState>() {
+    _ref.listen(navigateTrigerProvider, (previous, next) {
+      debugPrint('listen: nested navigateTrigerProvider');
+      debugPrint('\t nested $previous');
+      notifyListeners();
+    });
+  }
 
   @override
   Future<bool> popRoute() async {
@@ -36,6 +43,7 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
     }
     final bool canBackBottomNav =
         _ref.read(bottomNavigationStackProvider.notifier).pop();
+    _ref.read(navigateTrigerProvider.notifier).navigate();
     return canBackBottomNav;
   }
 
@@ -86,7 +94,9 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
         if (_ref.read(selectedSampleDataStackProvider
             .select((value) => value.isNotEmpty))) {
           _ref.read(selectedSampleDataStackProvider.notifier).pop();
-          notifyListeners();
+          debugPrint(
+              '\tcall navigate() in nested _onPopPage, bottom == dataList');
+          _ref.read(navigateTrigerProvider.notifier).navigate();
           return true;
         }
         break;
@@ -95,7 +105,9 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
           _ref
               .read(isOpenSettingDetailProvider.notifier)
               .update((state) => false);
-          notifyListeners();
+          debugPrint(
+              '\tcall navigate() in nested _onPopPage, bottom == setting');
+          _ref.read(navigateTrigerProvider.notifier).navigate();
           return true;
         }
         break;

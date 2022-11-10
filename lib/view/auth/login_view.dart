@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/provider/navigation/auth_navigation.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -81,6 +82,7 @@ class LoginView extends HookWidget {
                               .loginWithEmailAndPassword(
                                   emailTextController.text,
                                   passwordTextController.text);
+                          ref.read(navigateTrigerProvider.notifier).navigate();
                           isLogginIn.value = false;
                         },
                         child: isLogginIn.value
@@ -100,6 +102,9 @@ class LoginView extends HookWidget {
                             ref
                                 .read(authNavigationProvider.notifier)
                                 .setOpenSignUpPage(true);
+                            ref
+                                .read(navigateTrigerProvider.notifier)
+                                .navigate();
                           },
                           child: const Text('SignUp')),
                     ),
@@ -109,6 +114,9 @@ class LoginView extends HookWidget {
                             ref
                                 .read(authNavigationProvider.notifier)
                                 .setOpenForgotPasswordPage(true);
+                            ref
+                                .read(navigateTrigerProvider.notifier)
+                                .navigate();
                           },
                           child: const Text('If forgot password')),
                     ),

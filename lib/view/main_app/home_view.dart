@@ -8,7 +8,7 @@ class HomeView extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scrollController = useScrollController(
-        initialScrollOffset: ref.watch(homeViewScrollPositionProvider));
+        initialScrollOffset: ref.read(homeViewScrollPositionProvider));
     scrollController.addListener(() {
       // スクロール位置の変更に応じて復元するための位置を更新する
       ref
@@ -16,8 +16,8 @@ class HomeView extends HookConsumerWidget {
           .update((state) => scrollController.offset);
     });
     // 外部からスクロール位置の変更がされれば適応するため listen する
-    ref.listen(homeViewScrollPositionProvider,
-        (previous, next) => scrollController.jumpTo(next));
+    ref.listen(initHomeViewScrollPositionProvider,
+        (previous, next) => scrollController.jumpTo(0.0));
     return Scaffold(
         appBar: AppBar(
           title: const Text('Home'),

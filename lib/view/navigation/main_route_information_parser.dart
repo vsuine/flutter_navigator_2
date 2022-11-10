@@ -1,5 +1,4 @@
 import 'package:flutter/cupertino.dart';
-import 'package:flutter_application_1/provider/navigation/auth_navigation.dart';
 import 'package:flutter_application_1/provider/navigation/sample_tabbar_navigation.dart';
 import 'package:flutter_application_1/provider/user_data_provider.dart';
 import 'package:flutter_application_1/view/navigation/route_path.dart';
@@ -20,9 +19,9 @@ class MainRouteInformationParser extends RouteInformationParser<RoutePath> {
     debugPrint('parseRouteInformation');
     debugPrint('\trouteInformation.location == ${routeInformation.location}');
 
-    if (_ref.read(userDataProvider) == null) {
-      await _ref.watch(authNavigationProvider.notifier).fetchSession();
-    }
+    // if (_ref.read(userDataProvider) == null) {
+    //   await _ref.read(authNavigationProvider.notifier).fetchSession();
+    // }
 
     final pathSegment = Uri.parse(routeInformation.location ?? '').pathSegments;
     final firstPath = pathSegment.isEmpty ? '' : pathSegment.first;

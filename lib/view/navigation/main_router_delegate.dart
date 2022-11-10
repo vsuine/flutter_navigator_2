@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/provider/navigation/auth_navigation.dart';
 import 'package:flutter_application_1/provider/navigation/bottom_navigation.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_application_1/provider/navigation/sample_tabbar_navigation.dart';
 import 'package:flutter_application_1/provider/navigation/selected_data_detail_stack.dart';
 import 'package:flutter_application_1/provider/navigation/setting_navigation.dart';
@@ -20,7 +21,13 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
   final GlobalKey<NavigatorState> navigatorKey;
   final WidgetRef _ref;
 
-  MainRouterDelegate(this._ref) : navigatorKey = GlobalKey<NavigatorState>();
+  MainRouterDelegate(this._ref) : navigatorKey = GlobalKey<NavigatorState>() {
+    _ref.listen(navigateTrigerProvider, (previous, next) {
+      debugPrint('listen: navigateTrigerProvider');
+      debugPrint('\t$previous');
+      notifyListeners();
+    });
+  }
 
   @override
   Future<bool> popRoute() async {
@@ -49,32 +56,32 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
     /// 現在のアプリの状態からユーザー定義クラス (RoutePath) を返す
 
     debugPrint('currentConfiguration');
-    if (_ref.watch(authNavigationProvider).isLoggedIn == false) {
-      if (_ref.watch(authNavigationProvider).isOpenResetPasswordPage) {
+    if (_ref.read(authNavigationProvider).isLoggedIn == false) {
+      if (_ref.read(authNavigationProvider).isOpenResetPasswordPage) {
         return ResetPasswordPath();
-      } else if (_ref.watch(authNavigationProvider).isOpenForgotPasswordPage) {
+      } else if (_ref.read(authNavigationProvider).isOpenForgotPasswordPage) {
         return ForgotPasswordPath();
-      } else if (_ref.watch(authNavigationProvider).isOpenSignUpPage) {
+      } else if (_ref.read(authNavigationProvider).isOpenSignUpPage) {
         return SignUpPath();
       }
       return LoginPath();
     }
     final currentBottomNav =
-        _ref.watch(bottomNavigationStackProvider.select((value) => value.last));
+        _ref.read(bottomNavigationStackProvider.select((value) => value.last));
     switch (currentBottomNav) {
       case BottomNavigationState.home:
         return HomePath();
       case BottomNavigationState.tabSample:
-        return TabSamplePath(_ref.watch(sampleTabProvider));
+        return TabSamplePath(_ref.read(sampleTabProvider));
       case BottomNavigationState.dataList:
-        if (_ref.watch(selectedSampleDataStackProvider
+        if (_ref.read(selectedSampleDataStackProvider
             .select((value) => value.isNotEmpty))) {
           return SampleDataDetailPath(_ref.read(
               selectedSampleDataStackProvider.select((value) => value.last)));
         }
         return SampleDataListPath();
       case BottomNavigationState.setting:
-        if (_ref.watch(isOpenSettingDetailProvider)) {
+        if (_ref.read(isOpenSettingDetailProvider)) {
           return UserSettingPath();
         }
         return SettingPath();
@@ -90,7 +97,6 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
   Widget build(BuildContext context) {
     /// 状態によって返す widget を切り替える
     /// notifyListeners が呼び出された後に rebuild される
-    /// もしくは riverpod で watch して rebuild される
     debugPrint('rebuild');
     return Navigator(
         key: navigatorKey,
@@ -128,8 +134,11 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
       navController.setOpenForgotPasswordPage(false);
     } else if (nav.isOpenSignUpPage) {
       navController.setOpenSignUpPage(false);
+    } else {
+      return false;
     }
-
+    debugPrint('\tcall navigate() in _onPopPage');
+    _ref.read(navigateTrigerProvider.notifier).navigate();
     return true;
   }
 
@@ -169,11 +178,9 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
       _ref.read(authNavigationProvider.notifier).setOpenSignUpPage(false);
       _ref
           .read(authNavigationProvider.notifier)
-          .setOpenForgotPasswordPage(false);
+          .setOpenForgotPasswordPage(true);
       _ref.read(authNavigationProvider.notifier).setOpenResetPasswordPage(true);
-    }
-
-    if (configuration is HomePath) {
+    } else if (configuration is HomePath) {
       _ref
           .read(bottomNavigationStackProvider.notifier)
           .push(BottomNavigationState.home);
@@ -207,7 +214,8 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
           .push(BottomNavigationState.setting);
       _ref.read(isOpenSettingDetailProvider.notifier).update((state) => true);
     }
-    notifyListeners();
+    debugPrint('\t call navigate() in setNewRoutePath');
+    _ref.read(navigateTrigerProvider.notifier).navigate();
     return SynchronousFuture<void>(null);
   }
 
@@ -217,9 +225,11 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
   //   return setNewRoutePath(configuration); // デフォルト
   // }
 
-  // @override
-  // Future<void> setInitialRoutePath(RoutePath configuration) {
-  //   /// アプリ起動時にのみ呼び出される状態更新処理
-  //   return super.setInitialRoutePath(configuration);
-  // }
+  @override
+  Future<void> setInitialRoutePath(RoutePath configuration) {
+    /// アプリ起動時にのみ呼び出される状態更新処理
+    debugPrint('setInitialRoutePath');
+    return SynchronousFuture<void>(null);
+    // return super.setInitialRoutePath(configuration);
+  }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_application_1/data/sample_data.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_application_1/provider/navigation/selected_data_detail_stack.dart';
 import 'package:flutter_application_1/provider/sample_data_provider.dart';
 import 'package:flutter_application_1/provider/scroll_position_provider.dart';
@@ -15,30 +16,37 @@ class SampleDataListView extends HookConsumerWidget {
     scrollController.addListener(() => ref
         .read(dataListScrollPositionProvider.notifier)
         .update((state) => scrollController.offset));
-    ref.listen(dataListScrollPositionProvider,
-        (previous, next) => scrollController.jumpTo(next));
+    ref.listen(
+        initDataListScrollPositionProvider,
+        (previous, next) => scrollController.animateTo(
+            scrollController.position.minScrollExtent,
+            curve: Curves.easeOut,
+            duration: const Duration(seconds: 1)));
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sample Data'),
       ),
       body: RefreshIndicator(
-          onRefresh: () async {
-            ref.invalidate(sampleDataProvider);
-          },
-          child: SingleChildScrollView(
-              controller: scrollController,
-              child: ref.watch(sampleDataProvider).when(
-                  data: (data) => Column(
-                      children:
-                          data.map((e) => SampleDataView(data: e)).toList()),
-                  error: (error, stackTrace) =>
-                      const ListTile(title: Text('Error')),
-                  loading: () => const SizedBox(
-                      height: 300,
-                      child: Center(child: CircularProgressIndicator()))))),
-      floatingActionButton: FloatingActionButton(
-          onPressed: () => ref.invalidate(sampleDataProvider),
-          child: const Icon(Icons.refresh)),
+        onRefresh: () async {
+          ref.invalidate(sampleDataProvider);
+        },
+        child: SingleChildScrollView(
+          controller: scrollController,
+          child: ref.watch(sampleDataProvider).when(
+                data: (data) => Column(
+                    children:
+                        data.map((e) => SampleDataView(data: e)).toList()),
+                error: (error, stackTrace) =>
+                    const ListTile(title: Text('Error')),
+                loading: () => const SizedBox(
+                  height: 300,
+                  child: Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                ),
+              ),
+        ),
+      ),
     );
   }
 }
@@ -59,6 +67,7 @@ class SampleDataView extends StatelessWidget {
                     ref
                         .read(selectedSampleDataStackProvider.notifier)
                         .push(data.id);
+                    ref.read(navigateTrigerProvider.notifier).navigate();
                   },
                   child: Center(child: Text(data.counter.toString()))))),
     );

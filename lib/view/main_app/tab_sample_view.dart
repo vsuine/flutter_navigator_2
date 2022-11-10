@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_1/provider/navigation/navigate_triger_provider.dart';
 import 'package:flutter_application_1/provider/navigation/sample_tabbar_navigation.dart';
 import 'package:flutter_application_1/provider/scroll_position_provider.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -10,10 +11,21 @@ class TabSampleView extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tabController = useTabController(
         initialLength: 3, initialIndex: ref.read(sampleTabProvider).rawValue);
+    ref.listen(sampleTabProvider, (previous, next) {
+      if (tabController.indexIsChanging) {
+        // debugPrint('isChanging');
+        return;
+      }
+      tabController.animateTo(next.rawValue);
+    });
     tabController.addListener(() {
+      if (tabController.indexIsChanging == false) {
+        return;
+      }
       ref
           .read(sampleTabProvider.notifier)
           .update((state) => SampleTabBar.from(rawValue: tabController.index));
+      ref.read(navigateTrigerProvider.notifier).navigate();
     });
     return Scaffold(
       appBar: AppBar(
@@ -57,14 +69,16 @@ class SubView02 extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final scrollController = useScrollController(
-        initialScrollOffset: ref.read(tabSampleSubViewScrollPosition));
+        initialScrollOffset: ref.read(tabSampleSubViewScrollPositionProvider));
     scrollController.addListener(() {
       ref
-          .read(tabSampleSubViewScrollPosition.notifier)
+          .read(tabSampleSubViewScrollPositionProvider.notifier)
           .update((state) => scrollController.offset);
     });
-    ref.listen(tabSampleSubViewScrollPosition,
-        (previous, next) => scrollController.jumpTo(next));
+    ref.listen(
+        initTabSampleSubViewScrollPosition,
+        (previous, next) =>
+            scrollController.jumpTo(scrollController.position.minScrollExtent));
     return Scaffold(
         body: ListView.builder(
       controller: scrollController,
