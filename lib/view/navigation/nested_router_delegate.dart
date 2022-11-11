@@ -25,13 +25,14 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
     });
   }
 
+  /// 戻るボタンが押された時の挙動、Web のブラウザバックは関係ない。
+  ///
+  /// 基本は [PopNavigatorRouterDelegateMixin] を with で mixin する。
+  /// false を返すとアプリ全体をポップする。つまりアプリを閉じる。
+  ///
+  /// 非同期処理を行わない場合は [SynchronousFuture] で返却すべき
   @override
   Future<bool> popRoute() async {
-    /// 戻るボタンが押された時の挙動、Web のブラウザバックは関係ない
-    /// 基本は PopNavigatorRouterDelegateMixin を with で mixin する
-    /// false を返すとアプリ全体をポップする、つまりアプリを閉じる
-    /// 非同期処理を行わない場合は SynchronousFuture で返却すべき
-
     debugPrint('nested popRoute');
     final NavigatorState? navigator = navigatorKey.currentState;
     if (navigator == null) {
@@ -94,8 +95,6 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
         if (_ref.read(selectedSampleDataStackProvider
             .select((value) => value.isNotEmpty))) {
           _ref.read(selectedSampleDataStackProvider.notifier).pop();
-          debugPrint(
-              '\tcall navigate() in nested _onPopPage, bottom == dataList');
           _ref.read(navigateTrigerProvider.notifier).navigate();
           return true;
         }
@@ -105,8 +104,6 @@ class NestedRouterDelegate extends RouterDelegate<MainAppRoutePath>
           _ref
               .read(isOpenSettingDetailProvider.notifier)
               .update((state) => false);
-          debugPrint(
-              '\tcall navigate() in nested _onPopPage, bottom == setting');
           _ref.read(navigateTrigerProvider.notifier).navigate();
           return true;
         }

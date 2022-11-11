@@ -8,11 +8,14 @@ import 'package:flutter_application_1/provider/scroll_position_provider.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_application_1/view/navigation/nested_router_delegate.dart';
 
+// QUESTION: OS への URL 変更通知がネストされた Router からでも
+// 飛ばせるほうが、親 Router の Widget が Rebuild されないことが保障される
+// OS への通知も BackButtonDispatcher のように制御を取れないか
+
 class MainApp extends ConsumerWidget {
   const MainApp({Key? key}) : super(key: key);
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Android の戻るボタンなどの制御をネストされた Router に渡す
     ChildBackButtonDispatcher childBackButtonDispatcher = Router.of(context)
         .backButtonDispatcher!
         .createChildBackButtonDispatcher()
@@ -22,8 +25,7 @@ class MainApp extends ConsumerWidget {
         routerDelegate: NestedRouterDelegate(ref),
         // 戻るボタンの制御をネストされた Router に渡す
         backButtonDispatcher: childBackButtonDispatcher,
-        // ネストされた route information parser はもし設定しても呼び出されることはない
-        // OS への URL 変更通知がネストされた Router からでも飛ばせるほうが直観的なのになぜ？
+        // ネストされた RouteInformationParser は設定しても呼び出されることはない
         routeInformationParser: null,
       ),
       bottomNavigationBar: BottomNavigationBar(

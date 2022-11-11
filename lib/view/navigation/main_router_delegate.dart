@@ -10,11 +10,12 @@ import 'package:flutter_application_1/view/auth/forgot_password_view.dart';
 import 'package:flutter_application_1/view/auth/login_view.dart';
 import 'package:flutter_application_1/view/auth/reset_password_view.dart';
 import 'package:flutter_application_1/view/auth/signup_view.dart';
+import 'package:flutter_application_1/view/navigation/fetching_page.dart';
 import 'package:flutter_application_1/view/navigation/main_app.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:flutter_application_1/view/navigation/route_path.dart';
 
-/// RoiuterDelegate は 渡された設定に基づいて状態を復元する役割
+/// [RouterDelegate] は 渡された設定に基づいて状態を復元する役割
 class MainRouterDelegate extends RouterDelegate<RoutePath>
     with ChangeNotifier, PopNavigatorRouterDelegateMixin<RoutePath> {
   @override
@@ -24,20 +25,21 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
   MainRouterDelegate(this._ref) : navigatorKey = GlobalKey<NavigatorState>() {
     _ref.listen(navigateTrigerProvider, (previous, next) {
       debugPrint('listen: navigateTrigerProvider');
-      debugPrint('\t$previous');
       notifyListeners();
     });
   }
 
+  /// 戻るボタンが押された時の挙動、Web のブラウザバックは関係ない。
+  ///
+  /// 基本は [PopNavigatorRouterDelegateMixin] を with で mixin する。
+  /// false を返すとアプリ全体をポップする。つまりアプリを閉じる。
+  ///
+  /// 非同期処理を行わない場合は [SynchronousFuture] で返却すべき
   @override
   Future<bool> popRoute() async {
-    /// 戻るボタンが押された時の挙動、Web のブラウザバックは関係ない
-    /// 基本は PopNavigatorRouterDelegateMixin を with で mixin する
-    /// false を返すとアプリ全体をポップする、つまりアプリを閉じる
-    /// 非同期処理を行わない場合は SynchronousFuture で返却すべき
     debugPrint('popRoute');
 
-    // 基本機能は PopNavigatorRouterDelegateMixin が提供するので overrideしなくてもいい
+    // 基本機能は PopNavigatorRouterDelegateMixin が提供するので override しなくてもいい
     // PopNavigatorRouterDelegateMixin が提供するのは以下
     final NavigatorState? navigator = navigatorKey.currentState;
     if (navigator == null) {
@@ -50,12 +52,14 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
     // 例えば bottom navigation bar でタブ移動の履歴をたどるような場合には向かない
   }
 
+  /// [Router] が再構築によって経路情報が変更された可能性を検出したときに呼び出される.
+  /// 現在のアプリの状態から [RoutePath] を返す
   @override
   RoutePath? get currentConfiguration {
-    /// Router が再構築によって経路情報が変更された可能性を検出したときに呼び出される。
-    /// 現在のアプリの状態からユーザー定義クラス (RoutePath) を返す
-
     debugPrint('currentConfiguration');
+    if (_ref.read(authNavigationProvider).isFetchingSession) {
+      return FetchingSessionPath('');
+    }
     if (_ref.read(authNavigationProvider).isLoggedIn == false) {
       if (_ref.read(authNavigationProvider).isOpenResetPasswordPage) {
         return ResetPasswordPath();
@@ -93,10 +97,10 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
   bool get _isLoggedIn =>
       _ref.read(authNavigationProvider.select((value) => value.isLoggedIn));
 
+  /// 状態によって [Widget] を切り替える [Navigator] を返す
+  /// notifyListeners が呼び出された後に実行される
   @override
   Widget build(BuildContext context) {
-    /// 状態によって返す widget を切り替える
-    /// notifyListeners が呼び出された後に rebuild される
     debugPrint('rebuild');
     return Navigator(
         key: navigatorKey,
@@ -114,14 +118,21 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
               _ref.read(authNavigationProvider
                   .select((value) => value.isOpenResetPasswordPage)))
             const MaterialPage(child: ResetPasswordView()),
+          if (_isLoggedIn == false &&
+              _ref.read(authNavigationProvider
+                  .select((value) => value.isFetchingSession)))
+            const FetchLoadingPage(),
           if (_isLoggedIn) const MaterialPage(child: MainApp()),
         ],
         onPopPage: _onPopPage);
   }
 
+  /// [Navigator.pop] のコールバック関数.
+  /// AppBar の pop 用ボタン押下時など
+  ///
+  /// Web の ブラウザバックは該当しない
+  /// ブラウザバックは [RouteInformationParser.parseRouteInformation] が走る
   bool _onPopPage(Route<dynamic> route, dynamic result) {
-    /// Navigator.pop のコールバック関数、Android の戻るボタンが押されたときなど？
-    /// web の ブラウザバックは該当しない、ブラウザバックは RouteInformationParser が走る
     debugPrint('_onPopPage');
     debugPrint('\t${route.runtimeType}');
     if (!route.didPop(result)) return false;
@@ -137,16 +148,16 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
     } else {
       return false;
     }
-    debugPrint('\tcall navigate() in _onPopPage');
     _ref.read(navigateTrigerProvider.notifier).navigate();
     return true;
   }
 
+  /// [RouteInformationParser.parseRouteInformation] で解析された [RoutePath] から状態を更新する
+  ///
+  /// [setNewRoutePath] の後に notifyListerners を呼び出すべき
+  /// 非同期処理を行わない場合 [SynchronousFuture] で返却すべき
   @override
   Future<void> setNewRoutePath(RoutePath configuration) async {
-    /// parseRouteInformation で解析された RoutePath から状態を更新する
-    /// setNewRoutePath の後に notifyListerners を呼び出すべき
-    /// 非同期処理を行わない場合 SynchronousFuture で返却すべき
     debugPrint('setNewRoutePath');
     debugPrint('\tget: ${configuration.runtimeType}');
 
@@ -225,9 +236,9 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
   //   return setNewRoutePath(configuration); // デフォルト
   // }
 
+  /// アプリ起動時にのみ呼び出される状態更新処理
   @override
-  Future<void> setInitialRoutePath(RoutePath configuration) {
-    /// アプリ起動時にのみ呼び出される状態更新処理
+  Future<void> setInitialRoutePath(RoutePath configuration) async {
     debugPrint('setInitialRoutePath');
     return SynchronousFuture<void>(null);
     // return super.setInitialRoutePath(configuration);

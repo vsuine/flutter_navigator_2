@@ -8,7 +8,7 @@ part 'generated/api_service.g.dart';
 
 final apiClientProvider = Provider((ref) => MockApiService());
 
-// api との接続と結果の取得を retrofit に任せる
+/// API 接続と結果の取得を行う retrofit クラス
 @RestApi(baseUrl: '')
 abstract class ApiClient {
   factory ApiClient(Dio dio, {String baseUrl}) = _ApiClient;

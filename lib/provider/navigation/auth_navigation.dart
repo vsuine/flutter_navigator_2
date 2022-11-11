@@ -9,6 +9,7 @@ final authNavigationProvider =
 class AuthNavigationStateNotifier extends StateNotifier<AuthNavigationState> {
   AuthNavigationStateNotifier(this._ref)
       : super(AuthNavigationState(
+            isFetchingSession: true,
             isLoggedIn: false,
             isOpenForgotPasswordPage: false,
             isOpenResetPasswordPage: false,
@@ -31,13 +32,24 @@ class AuthNavigationStateNotifier extends StateNotifier<AuthNavigationState> {
   }
 
   Future<void> logout() async {
-    await _ref.read(authServiceProvider).logout();
-    state = state.copyWith(isLoggedIn: false);
+    try {
+      await _ref.read(authServiceProvider).logout();
+      _ref.read(userDataProvider.notifier).update((state) => null);
+      state = state.copyWith(isLoggedIn: false);
+    } catch (e) {
+      return;
+    }
   }
 
-  Future<void> fetchSession() async {
+  Future<bool> fetchSession() async {
     final userData = await _ref.read(authServiceProvider).fetchSession();
     _ref.read(userDataProvider.notifier).update((state) => userData);
+    if (userData != null) {
+      state = state.copyWith(isFetchingSession: false, isLoggedIn: true);
+    } else {
+      state = state.copyWith(isFetchingSession: false, isLoggedIn: false);
+    }
+    return userData != null;
   }
 
   void setOpenSignUpPage(bool isOpen) {
@@ -55,22 +67,26 @@ class AuthNavigationStateNotifier extends StateNotifier<AuthNavigationState> {
 
 class AuthNavigationState {
   AuthNavigationState(
-      {required this.isLoggedIn,
+      {required this.isFetchingSession,
+      required this.isLoggedIn,
       required this.isOpenSignUpPage,
       required this.isOpenForgotPasswordPage,
       required this.isOpenResetPasswordPage});
 
+  bool isFetchingSession;
   bool isLoggedIn;
   bool isOpenSignUpPage;
   bool isOpenForgotPasswordPage;
   bool isOpenResetPasswordPage;
 
   AuthNavigationState copyWith(
-      {bool? isLoggedIn,
+      {bool? isFetchingSession,
+      bool? isLoggedIn,
       bool? isOpenSignUpPage,
       bool? isOpenForgotPasswordPage,
       bool? isOpenResetPasswordPage}) {
     return AuthNavigationState(
+        isFetchingSession: isFetchingSession ?? this.isFetchingSession,
         isLoggedIn: isLoggedIn ?? this.isLoggedIn,
         isOpenForgotPasswordPage:
             isOpenForgotPasswordPage ?? this.isOpenForgotPasswordPage,

@@ -13,7 +13,6 @@ class TabSampleView extends HookConsumerWidget {
         initialLength: 3, initialIndex: ref.read(sampleTabProvider).rawValue);
     ref.listen(sampleTabProvider, (previous, next) {
       if (tabController.indexIsChanging) {
-        // debugPrint('isChanging');
         return;
       }
       tabController.animateTo(next.rawValue);
@@ -25,6 +24,7 @@ class TabSampleView extends HookConsumerWidget {
       ref
           .read(sampleTabProvider.notifier)
           .update((state) => SampleTabBar.from(rawValue: tabController.index));
+      debugPrint('addListener');
       ref.read(navigateTrigerProvider.notifier).navigate();
     });
     return Scaffold(

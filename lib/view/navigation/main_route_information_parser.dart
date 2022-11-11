@@ -1,78 +1,103 @@
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter_application_1/provider/navigation/auth_navigation.dart';
 import 'package:flutter_application_1/provider/navigation/sample_tabbar_navigation.dart';
 import 'package:flutter_application_1/provider/user_data_provider.dart';
 import 'package:flutter_application_1/view/navigation/route_path.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
+/// 主に OS とのやり取りを定義する
 class MainRouteInformationParser extends RouteInformationParser<RoutePath> {
   MainRouteInformationParser(this._ref);
   final WidgetRef _ref;
+  // 初回だけセッション維持を確認する
+  bool isFetchedSession = false;
+
+  /// [RouteInformationProvider] から通知される [RouteInformation] を
+  /// アプリの状態である [RoutePath] に変換する
+  ///
+  /// Web : URL に値を入力したとき、「戻る」「進む」が押されたときに呼び出される
+  ///
+  /// その他プラットフォーム : 初回アクセス時に呼び出される
+  ///
+  /// Async な理由は認証チェックなどを行うため
+  /// async 処理をしないなら [SynchronousFuture] 返却を検討する
   @override
   Future<RoutePath> parseRouteInformation(
       RouteInformation routeInformation) async {
-    /// Web ページの url に値を入力したとき（初回アクセスも含む）に呼び出される
-    /// OS から通知される RouteInformation をアプリの状態である RoutePath に変換する
-    /// Web: url から現在のパスを解析する
-    /// async な理由は auth guard、つまり認証チェックなどを行うなどのため
-    /// つまり、リダイレクトなどはここで行う
-
     debugPrint('parseRouteInformation');
-    debugPrint('\trouteInformation.location == ${routeInformation.location}');
+    debugPrint('\t routeInformation.location == ${routeInformation.location}');
 
-    // if (_ref.read(userDataProvider) == null) {
-    //   await _ref.read(authNavigationProvider.notifier).fetchSession();
-    // }
-
-    final pathSegment = Uri.parse(routeInformation.location ?? '').pathSegments;
-    final firstPath = pathSegment.isEmpty ? '' : pathSegment.first;
-
-    switch (firstPath) {
-      case LoginPath.path:
-        return LoginPath();
-      case SignUpPath.path:
-        return SignUpPath();
-      case ForgotPasswordPath.path:
-        return ForgotPasswordPath();
-      case ResetPasswordPath.path:
-        return ResetPasswordPath();
+    final uri = Uri.parse(routeInformation.location ?? '');
+    bool hasSession = _ref.read(userDataProvider) != null;
+    if (isFetchedSession == false) {
+      hasSession =
+          await _ref.read(authNavigationProvider.notifier).fetchSession();
+      isFetchedSession = true;
+      return _checkPath(uri, hasSession);
+    } else {
+      return SynchronousFuture(_checkPath(uri, hasSession));
     }
-    if (_ref.read(userDataProvider) == null) return LoginPath();
+  }
+
+  /// アプリの状態から Web の URL を更新するためのメソッド
+  ///
+  /// [RouterDelegate.currentConfiguration] の後に呼び出され、
+  /// 渡された [RoutePath] が持つ状態から [RouteInformation] に変換する
+  @override
+  RouteInformation? restoreRouteInformation(RoutePath configuration) {
+    debugPrint('restoreRouteInformation');
+    debugPrint('\t configuration.runtimeType: ${configuration.runtimeType}');
+    return RouteInformation(location: configuration.uri.path);
+  }
+
+  /// [uri]         : [RouteInformation.location] から取得した [Uri]
+  ///
+  /// [hasSession]  : セッション維持
+  RoutePath _checkPath(Uri uri, bool hasSession) {
+    final firstPath = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
+    if (hasSession == false) {
+      // セッションを維持していないなら AuthRoutePath への遷移
+      switch (firstPath) {
+        case LoginPath.path:
+          return LoginPath();
+        case SignUpPath.path:
+          return SignUpPath();
+        case ForgotPasswordPath.path:
+          return ForgotPasswordPath();
+        case ResetPasswordPath.path:
+          return ResetPasswordPath();
+        default:
+          return LoginPath();
+      }
+    }
+    // セッションを保持しているなら MainAppRoutePath に遷移する
+    // ログインページなどへの遷移は許可しない
     switch (firstPath) {
       case HomePath.path:
         return HomePath();
       case TabSamplePath.path:
         SampleTabBar sampleTabBar = SampleTabBar.tab01;
-        if (pathSegment.length == 2) {
+        if (uri.pathSegments.length == 2) {
           sampleTabBar = SampleTabBar.values.firstWhere(
-            (element) => element.pathName == pathSegment[1],
+            (element) => element.pathName == uri.pathSegments[1],
             orElse: () => SampleTabBar.tab01,
           );
         }
         return TabSamplePath(sampleTabBar);
       case SampleDataListPath.path:
-        if (pathSegment.length == 2) {
-          return SampleDataDetailPath(pathSegment[1]);
+        if (uri.pathSegments.length == 2) {
+          return SampleDataDetailPath(uri.pathSegments[1]);
         }
         return SampleDataListPath();
       case SettingPath.path:
-        if (pathSegment.length == 2 && pathSegment[1] == UserSettingPath.path) {
+        if (uri.pathSegments.length == 2 &&
+            uri.pathSegments[1] == UserSettingPath.path) {
           return UserSettingPath();
         }
         return SettingPath();
       default:
-        return LoginPath();
+        return HomePath();
     }
-  }
-
-  @override
-  RouteInformation? restoreRouteInformation(RoutePath configuration) {
-    /// currentConfiguration の後に呼び出される
-    /// currentConfiguration で得た RoutePath が持つ状態から RouteInformation に変換する
-    /// location (url) が異なれば OS に通知する
-    /// つまり、アプリの状態から Web の URL を更新するためのもの
-
-    debugPrint('restoreRouteInformation');
-    debugPrint('\tconfiguration.runtimeType: ${configuration.runtimeType}');
-    return RouteInformation(location: configuration.location);
   }
 }
