@@ -40,7 +40,7 @@ class MainRouteInformationParser extends RouteInformationParser<RoutePath> {
     }
   }
 
-  /// アプリの状態から Web の URL を更新するためのメソッド
+  /// アプリの状態からパスを更新するためのメソッド
   ///
   /// [RouterDelegate.currentConfiguration] の後に呼び出され、
   /// 渡された [RoutePath] が持つ状態から [RouteInformation] に変換する
