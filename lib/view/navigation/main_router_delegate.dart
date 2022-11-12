@@ -52,8 +52,11 @@ class MainRouterDelegate extends RouterDelegate<RoutePath>
     // 例えば bottom navigation bar でタブ移動の履歴をたどるような場合には向かない
   }
 
-  /// [Router] が再構築によって経路情報が変更された可能性を検出したときに呼び出される.
   /// 現在のアプリの状態から [RoutePath] を返す
+  ///
+  /// [Router] が再構築によって経路情報が変更された可能性を検出したときに呼び出される.
+  ///
+  /// 現在のアプリの状態は _ref によって読み取る
   @override
   RoutePath? get currentConfiguration {
     debugPrint('currentConfiguration');

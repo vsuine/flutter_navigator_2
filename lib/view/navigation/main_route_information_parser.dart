@@ -6,7 +6,7 @@ import 'package:flutter_application_1/provider/user_data_provider.dart';
 import 'package:flutter_application_1/view/navigation/route_path.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
-/// 主に OS とのやり取りを定義する
+/// [RouteInformationParser] は OS とのやり取りを行う
 class MainRouteInformationParser extends RouteInformationParser<RoutePath> {
   MainRouteInformationParser(this._ref);
   final WidgetRef _ref;
@@ -51,9 +51,9 @@ class MainRouteInformationParser extends RouteInformationParser<RoutePath> {
     return RouteInformation(location: configuration.uri.path);
   }
 
-  /// [uri]         : [RouteInformation.location] から取得した [Uri]
-  ///
-  /// [hasSession]  : セッション維持
+  /// [RouteInformation.location] から取得した [uri] と
+  /// セッション維持を維持しているかの情報 [hasSession] を用いて
+  /// [RoutePath] に変換する
   RoutePath _checkPath(Uri uri, bool hasSession) {
     final firstPath = uri.pathSegments.isEmpty ? '' : uri.pathSegments.first;
     if (hasSession == false) {
@@ -72,7 +72,7 @@ class MainRouteInformationParser extends RouteInformationParser<RoutePath> {
       }
     }
     // セッションを保持しているなら MainAppRoutePath に遷移する
-    // ログインページなどへの遷移は許可しない
+    // ログインページなどへの遷移は拒否し、必要であればログアウトさせる
     switch (firstPath) {
       case HomePath.path:
         return HomePath();
