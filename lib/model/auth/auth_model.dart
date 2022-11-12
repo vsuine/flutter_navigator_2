@@ -19,6 +19,7 @@ class MockAuthService extends BaseAuthService {
     await Future.delayed(const Duration(seconds: 1));
   }
 
+  // 初回起動はセッションが絶対に取得できるようにしている
   bool _hasSession = true;
 
   @override
